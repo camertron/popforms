@@ -27,11 +27,14 @@ $(document).ready(function() {
 	  this.onSuccess = options.onSuccess;
 	  this.onFailure = options.onFailure;
 	  this.onServerFailure = options.onServerFailure;
+	  this.formatUrl = options.formatUrl;
 
 	  /* wrap and hide form */
-	  this.form.wrap('<div class="popform"></div>');
-	  this.form = this.form.parent();
-	  this.form.hide();
+	  if (this.form.parent().attr("class") != "popform") {
+	    this.form.wrap('<div class="popform"></div>');
+    }
+
+	  this.container = this.form.parent();
 
 	  this.cancel_btn.click(function() {
 	    that.hide();
@@ -47,7 +50,7 @@ $(document).ready(function() {
 	    //gather all form data into an array
 	    var form_data = [];
 	    var form_elements = [];
-	    $("input[type=text], input[type=checkbox], input[type=radio], textarea, select", that.form).each(function(index, form_element) {
+	    $("input:text, input:checkbox:checked, input:radio:checked, textarea, select", that.form).each(function(index, form_element) {
 	      if ($(form_element).attr("name") !== undefined) {
 	        form_elements[$(form_element).attr("name")] = $(form_element).val();
 	        form_data.push(escape($(form_element).attr("name")) + '=' + escape($(form_element).val()));
@@ -55,13 +58,18 @@ $(document).ready(function() {
 	    });
 
 	    if (that.onSubmit !== undefined) {
-	      that.onSubmit(form_elements, that);
+	      var extra_params = that.onSubmit(form_elements, that);
+	      if (extra_params) {
+	        $.each(extra_params, function(index, value) {
+	          form_data.push(value);
+	        });
+	      }
 	    }
 
       if ((that.submit_url !== undefined) && (that.submit_url != "")) {
   	    $.ajax({
   	      type: 'POST',
-  	      url: that.submit_url,
+  	      url: (that.formatUrl === undefined) ? that.submit_url : that.formatUrl(that.submit_url),
   	      data: form_data.join("&"),
   	      dataType: "json",
   	      success: function(response, textStatus, jqXHR) {
@@ -91,19 +99,20 @@ $(document).ready(function() {
 	  show: function() {
 	    this.shadow_div.css("height", $(document).height());
 	    this.shadow_div.show();
-	    this.form.css("position", "absolute");
-	    this.form.css("top", (($(window).height() / 2) - (this.form.height() / 2)) + $(window).scrollTop());
-	    this.form.css("left", ($(window).width() / 2) - (this.form.width() / 2));
 	    this.form.show();
+	    this.container.show();
+	    this.container.css("position", "absolute");
+	    this.container.css("top", (($(window).height() / 2) - (this.container.height() / 2)) + $(window).scrollTop());
+	    this.container.css("left", ($(window).width() / 2) - (this.container.width() / 2));
 	  },
 
 	  hide: function() {
-	    this.form.hide();
+	    this.container.hide();
 	    this.shadow_div.hide();
 	  },
 
 	  clear: function() {
-	    $("input[type=text], input[type=checkbox], input[type=radio], textarea, select", this.form).each(function(index, form_element) {
+	    $("input:text, input:checkbox:checked, textarea, select", this.form).each(function(index, form_element) {
 	      $(form_element).val("");
 	    });
 	  }
